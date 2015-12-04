@@ -31,10 +31,10 @@ namespace PathSearch.Executer
             }
             bool endReached = endPoint.IsEqual(currentPoint);
             bool reachedWithinExpectedSteps = stepsMoved <= expectedSteps;
-            if (reachedWithinExpectedSteps)
-                return SearchResult.EndReadchedWithinExpectedSteps;
             if (invalidStepTaken)
                 return SearchResult.EndReached;
+            if (reachedWithinExpectedSteps && endReached)
+                return SearchResult.EndReadchedWithinExpectedSteps;
             return SearchResult.EndReached;
         }
     }

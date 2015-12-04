@@ -1,6 +1,7 @@
 ﻿using PathSearch.Contract;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,15 +27,9 @@ namespace PathSearch.Search
     class SearchContestImplementation : SearchImplementation
     {
         private Queue<Point> workingQueue;
-        private UInt32[,] scoreMap;
         private Point bestOption;
-       
-        //private List<Point> openSet;
-        //private List<Point> closedSet;
-
+        private UInt32[,] scoreMap;
         private Point[,] naviMap;
-        //private Double[,] fScoreMap;
-        //private Double[,] gScoreMap;
 
         public SearchContestImplementation(IPlayground playground, Point startPoint, Point endPoint)
             : base(playground, startPoint, endPoint)
@@ -42,64 +37,32 @@ namespace PathSearch.Search
             bestOption = new Point();
             workingQueue = new Queue<Point>();
             scoreMap = new UInt32[playground.Width, playground.Height];
-
-            //openSet = new List<Point>();
-            //closedSet = new List<Point>();
-
             naviMap = new Point[playground.Width, playground.Height];
-            //fScoreMap = new Double[playground.Width, playground.Height];
-            //gScoreMap = new Double[playground.Width, playground.Height];
-
-            //#region Initialize fScoreMap and gScoreMap to default value of Infinity
+            #region Initialize scoreMap to default value of Infinity
 
             for (int i = 0; i < playground.Width; i++)
             {
                 for (int k = 0; k < playground.Height; k++)
                 {
                     scoreMap[i, k] = UInt32.MaxValue;
-                    //        fScoreMap[i, k] = Double.MaxValue;
                 }
             }
 
-            //#endregion
+            #endregion
 
-            //openSet.Add(startPoint);
             workingQueue.Enqueue(this.endPoint);
             scoreMap[endPoint.x, endPoint.y] = 0;
-            //gScoreMap[startPoint.x, startPoint.y] = 0;
-            //fScoreMap[startPoint.x, startPoint.y] = gScoreMap[startPoint.x, startPoint.y] + Heuristic(startPoint);
+            bestOption.Clone(this.startPoint);
         }
-
-        //private Double Heuristic(Point p)
-        //{
-        //    return Math.Sqrt((p.x - this.endPoint.x) * (p.x - this.endPoint.x) + (p.y - this.endPoint.y) * (p.y - this.endPoint.y));
-        //}
 
         public override bool NextStep(Action<Point> onStep)
         {
             Point currentPoint = new Point();
             Point neighbourPoint = new Point();
+            //List of neighbours Point, without blocked point. 
             List<Point> validNeighbours = new List<Point>();
 
-            //double tempGScore = 0;
-            //while (openSet.Count > 0 && shortestPath.Count == 0)
-            //{
-            //    tempGScore = 0;
-            //    currentPoint = openSet.Select(p => new { point = p, fScore = fScoreMap[p.x, p.y] }).OrderBy(r => r.fScore).First().point;
-
-            //    if (this.endPoint.IsEqual(currentPoint))
-            //    {
-            //        shortestPath.Push(currentPoint);
-            //        while (!currentPoint.IsEqual(startPoint))
-            //        {
-            //            shortestPath.Push(currentPoint);
-            //            currentPoint = naviMap[currentPoint.x, currentPoint.y];
-            //        }
-            //    }
-
-            //    openSet.Remove(currentPoint);
-            //    closedSet.Add(currentPoint);
-
+            // I continue while I have points to check, I loop just the first time
             while (workingQueue.Count > 0)
             {
                 currentPoint = workingQueue.Dequeue();
@@ -117,6 +80,7 @@ namespace PathSearch.Search
                         neighbourPoint.x += x;
                         neighbourPoint.y += y;
 
+                        //Validity check: must be into the playground, must be not equal the current node && must be not blocked.
                         if (neighbourPoint.x >= 0 && neighbourPoint.y >= 0 &&
                             neighbourPoint.x < playground.Width && neighbourPoint.y < playground.Height &&
                             !currentPoint.IsEqual(neighbourPoint) &&
@@ -131,6 +95,7 @@ namespace PathSearch.Search
 
                 foreach (Point p in validNeighbours)
                 {
+                    //Check already visited point
                     if (scoreMap[currentPoint.x, currentPoint.y] + 1 < scoreMap[p.x, p.y])
                     {
                         scoreMap[p.x, p.y] = scoreMap[currentPoint.x, currentPoint.y] + 1;
@@ -139,29 +104,13 @@ namespace PathSearch.Search
                     }
                 }
 
+                //Exit if I get startpoint
                 if (validNeighbours.Where(p => p.x == this.startPoint.x && p.y == this.startPoint.y).Count() > 0)
                     workingQueue.Clear();
             }
 
-            //    foreach (Point n in validNeighbours)
-            //    {
-            //        if (closedSet.Contains(n)) continue;
-
-            //        tempGScore = gScoreMap[currentPoint.x, currentPoint.y] + 1;
-
-            //        if (!openSet.Contains(n))
-            //            openSet.Add(n);
-            //        else if (tempGScore >= gScoreMap[n.x, n.y])
-            //            continue;
-
-            //        naviMap[n.x, n.y] = currentPoint;
-            //        gScoreMap[n.x, n.y] = tempGScore;
-            //        fScoreMap[n.x, n.y] = gScoreMap[n.x, n.y] + Heuristic(n);
-            //    }
-            //}
-
             bestOption.Clone(naviMap[bestOption.x, bestOption.y]);
-
+            Debug.WriteLine(String.Format("My next step is the point ({0},{1}) and is weight is {2}", bestOption.x, bestOption.y, scoreMap[bestOption.x, bestOption.y]));
             onStep(bestOption);
 
             return !bestOption.IsEqual(this.endPoint);
